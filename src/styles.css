@@ -1,0 +1,504 @@
+:root {
+  color-scheme: light;
+  font-family: "Segoe UI", "Trebuchet MS", sans-serif;
+  background: #f3ede3;
+  color: #1f2328;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(255, 199, 130, 0.55), transparent 28%),
+    linear-gradient(160deg, #f9f4ec 0%, #efe7da 55%, #e7dfd2 100%);
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.app-shell {
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.setup-shell,
+.meeting-shell,
+.projector-shell {
+  min-height: calc(100vh - 48px);
+}
+
+.hero-card,
+.panel,
+.sidebar-card,
+.modal-shell {
+  border: 1px solid rgba(111, 81, 46, 0.14);
+  border-radius: 24px;
+  background: rgba(255, 253, 249, 0.92);
+  box-shadow: 0 24px 60px rgba(88, 63, 36, 0.12);
+}
+
+.hero-card {
+  padding: 28px;
+  margin-bottom: 20px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: #9b4c2f;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.hero-card h1,
+.panel h2,
+.sidebar-header h2,
+.modal-header h2 {
+  margin: 0;
+}
+
+.hero-copy,
+.panel-header p,
+.muted-text,
+.about-copy,
+.confirm-copy {
+  color: #64584d;
+}
+
+.setup-grid,
+.meeting-shell {
+  display: grid;
+  gap: 20px;
+}
+
+.setup-grid {
+  grid-template-columns: 320px 1fr;
+}
+
+.panel {
+  padding: 22px;
+}
+
+.panel-header {
+  margin-bottom: 18px;
+}
+
+.panel-header p {
+  margin: 6px 0 0;
+}
+
+.slot-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.slot-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: #f6efe4;
+}
+
+.slot-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.slot-controls button {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 999px;
+  background: #b8613c;
+  color: #fffdf8;
+}
+
+.role-table,
+.report-table,
+.log-table {
+  display: grid;
+  align-items: center;
+}
+
+.role-table {
+  grid-template-columns: 1.3fr 1.2fr 0.8fr;
+  gap: 12px 14px;
+}
+
+.role-table-header,
+.report-header,
+.log-header {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8a6e56;
+}
+
+.role-label {
+  font-weight: 600;
+}
+
+input,
+select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #d7c5b4;
+  border-radius: 14px;
+  background: #fffdfa;
+}
+
+.setup-actions,
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.primary-button,
+.secondary-button,
+.accent-button,
+.nav-button,
+.ghost-button,
+.arrow-button {
+  border: none;
+  border-radius: 16px;
+  padding: 13px 18px;
+  transition: transform 120ms ease, opacity 120ms ease, box-shadow 120ms ease;
+}
+
+.primary-button,
+.accent-button {
+  background: linear-gradient(135deg, #b74e30, #cf7f35);
+  color: #fffdf9;
+  box-shadow: 0 12px 26px rgba(183, 78, 48, 0.24);
+}
+
+.secondary-button,
+.ghost-button,
+.nav-button,
+.arrow-button {
+  background: #fff8f1;
+  color: #372b22;
+  border: 1px solid rgba(120, 88, 55, 0.16);
+}
+
+.primary-button:hover,
+.secondary-button:hover,
+.accent-button:hover,
+.nav-button:hover,
+.ghost-button:hover,
+.arrow-button:hover {
+  transform: translateY(-1px);
+}
+
+.primary-button:disabled,
+.secondary-button:disabled,
+.accent-button:disabled,
+.arrow-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.meeting-shell {
+  grid-template-columns: minmax(320px, 390px) 1fr;
+}
+
+.sidebar-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+  padding: 18px;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.step-pill {
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #f7ede1;
+  color: #82563c;
+  font-weight: 700;
+}
+
+.log-table {
+  grid-template-columns: 48px minmax(0, 1fr) 74px 74px;
+  gap: 8px;
+  align-content: start;
+}
+
+.log-row {
+  min-height: 58px;
+  border: 1px solid rgba(127, 96, 68, 0.12);
+  border-radius: 14px;
+  background: #fffdfa;
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.log-row-current {
+  background: #ba4e31;
+  color: #fffdfa;
+}
+
+.log-row-complete {
+  background: #edf7ef;
+}
+
+.sidebar-actions,
+.sidebar-menu {
+  display: grid;
+  gap: 10px;
+}
+
+.nav-button {
+  text-align: left;
+  font-weight: 700;
+}
+
+.timer-panel {
+  border-radius: 26px;
+  padding: 2px;
+  box-shadow: 0 24px 60px rgba(88, 63, 36, 0.16);
+}
+
+.timer-panel-inner {
+  min-height: 100%;
+  padding: 28px;
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--signal-color) 82%, white);
+}
+
+.role-display {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3rem);
+  text-align: center;
+}
+
+.time-display {
+  margin: 18px 0;
+  font-size: clamp(4rem, 9vw, 6.8rem);
+  font-weight: 700;
+  text-align: center;
+}
+
+.progress-track {
+  width: min(820px, 100%);
+  height: 18px;
+  margin: 0 auto 20px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.42);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.signal-display {
+  font-size: clamp(1.9rem, 4vw, 3rem);
+  font-weight: 800;
+  text-align: center;
+  letter-spacing: 0.08em;
+}
+
+.meta-line {
+  margin: 10px 0 0;
+  text-align: center;
+}
+
+.table-topic-card {
+  width: min(520px, 100%);
+  margin: 22px auto 0;
+  padding: 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.34);
+  backdrop-filter: blur(6px);
+}
+
+.table-topic-card label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.timer-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  width: min(760px, 100%);
+  margin: 28px auto 0;
+}
+
+.wide-button {
+  grid-column: span 3;
+}
+
+.arrow-button {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(35, 26, 18, 0.5);
+  backdrop-filter: blur(10px);
+}
+
+.modal-shell {
+  width: min(760px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  padding: 24px;
+}
+
+.modal-shell-wide {
+  width: min(1040px, 100%);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.panel-in-modal {
+  margin-bottom: 18px;
+}
+
+.report-table {
+  grid-template-columns: 1.15fr 1fr 0.72fr 0.72fr 0.82fr;
+  gap: 12px 16px;
+}
+
+.empty-state {
+  grid-column: 1 / -1;
+  padding: 18px 0;
+  color: #6f6052;
+}
+
+.edit-grid {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.about-copy p,
+.confirm-copy {
+  margin: 0 0 12px;
+}
+
+.projector-shell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+}
+
+.projector-card {
+  width: min(1200px, 100%);
+  text-align: center;
+}
+
+.projector-role {
+  font-size: clamp(2.2rem, 4vw, 3.8rem);
+  font-weight: 700;
+}
+
+.projector-time {
+  margin: 24px 0;
+  font-size: clamp(6rem, 14vw, 10rem);
+  font-weight: 800;
+}
+
+.projector-signal {
+  font-size: clamp(2.2rem, 4vw, 4rem);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.projector-detail {
+  font-size: clamp(1.2rem, 2.4vw, 2rem);
+}
+
+@media (max-width: 980px) {
+  .setup-grid,
+  .meeting-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .timer-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .wide-button {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 720px) {
+  .app-shell {
+    padding: 14px;
+  }
+
+  .role-table,
+  .report-table {
+    grid-template-columns: 1fr;
+  }
+
+  .role-table-header,
+  .report-header {
+    display: none;
+  }
+
+  .log-table {
+    grid-template-columns: 40px minmax(0, 1fr) 68px 68px;
+  }
+
+  .timer-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .wide-button {
+    grid-column: span 1;
+  }
+}
