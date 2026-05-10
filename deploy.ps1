@@ -2,7 +2,7 @@
 # This script builds the project and deploys to gh-pages branch
 
 Write-Host "Building project..." -ForegroundColor Green
-npm run build
+npx vite build
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Build failed!" -ForegroundColor Red
