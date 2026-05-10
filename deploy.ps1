@@ -19,6 +19,10 @@ git checkout gh-pages
 
 Write-Host "Moving build files to root..." -ForegroundColor Green
 if (Test-Path "docs") {
+    # Replace root index.html with built version
+    if (Test-Path "docs\index.html") {
+        Copy-Item "docs\index.html" "index.html" -Force
+    }
     Move-Item "docs\*" "." -Force
     Remove-Item "docs" -Recurse -Force
 }
