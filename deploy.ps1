@@ -1,8 +1,11 @@
 # Deployment script for GitHub Pages
 # This script builds the project and deploys to gh-pages branch
 
+Write-Host "Installing dependencies..." -ForegroundColor Green
+npm install
+
 Write-Host "Building project..." -ForegroundColor Green
-npx vite build
+npm run build
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Build failed!" -ForegroundColor Red
