@@ -9,26 +9,35 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-Write-Host "Cleaning up build artifacts..." -ForegroundColor Green
+Write-Host "Cleaning local build cache..." -ForegroundColor Green
 if (Test-Path ".vite") {
-    Remove-Item ".vite" -Recurse -Force
+    Remove-Item ".vite" -Recurse -Force -ErrorAction SilentlyContinue
 }
 
 Write-Host "Switching to gh-pages branch..." -ForegroundColor Green
 git checkout gh-pages
 
-Write-Host "Moving build files to root..." -ForegroundColor Green
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Failed to checkout gh-pages branch." -ForegroundColor Red
+    exit 1
+}
+
+Write-Host "Cleaning old deployment files..." -ForegroundColor Green
+Get-ChildItem -Force | Where-Object { $_.Name -notin '.git', '.gitignore', 'CNAME', 'README.md' } | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+
+Write-Host "Copying build output to branch root..." -ForegroundColor Green
+Copy-Item -Recurse "docs\*" "." -Force -ErrorAction Stop
+
 if (Test-Path "docs") {
-    # Replace root index.html with built version
-    if (Test-Path "docs\index.html") {
-        Copy-Item "docs\index.html" "index.html" -Force
-    }
-    Move-Item "docs\*" "." -Force
-    Remove-Item "docs" -Recurse -Force
+    Remove-Item "docs" -Recurse -Force -ErrorAction SilentlyContinue
+}
+
+if (Test-Path "dist") {
+    Remove-Item "dist" -Recurse -Force -ErrorAction SilentlyContinue
 }
 
 Write-Host "Committing changes..." -ForegroundColor Green
-git add .
+git add -A
 git commit -m "Deploy to GitHub Pages $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
 
 Write-Host "Pushing to remote..." -ForegroundColor Green
