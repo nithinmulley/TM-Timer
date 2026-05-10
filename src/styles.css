@@ -32,7 +32,13 @@ button {
   padding: 24px;
 }
 
+.meeting-app-shell {
+  height: 100vh;
+  overflow: hidden;
+}
+
 .setup-shell,
+.meeting-screen,
 .meeting-shell,
 .projector-shell {
   min-height: calc(100vh - 48px);
@@ -70,11 +76,17 @@ button {
 }
 
 .hero-copy,
+.hero-meta,
 .panel-header p,
 .muted-text,
 .about-copy,
 .confirm-copy {
   color: #64584d;
+}
+
+.hero-meta {
+  margin: 14px 0 0;
+  font-weight: 800;
 }
 
 .setup-grid,
@@ -218,8 +230,108 @@ select {
   transform: none;
 }
 
+.meeting-screen {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 16px;
+  height: calc(100vh - 48px);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.meeting-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid rgba(111, 81, 46, 0.14);
+  border-radius: 20px;
+  background: rgba(255, 253, 249, 0.92);
+  box-shadow: 0 14px 32px rgba(88, 63, 36, 0.1);
+}
+
+.meeting-toolbar .nav-button {
+  flex: 1 1 120px;
+  text-align: center;
+}
+
+.toolbar-total {
+  display: grid;
+  flex: 1 1 160px;
+  gap: 2px;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 6px 10px;
+  border: 1px solid rgba(120, 88, 55, 0.16);
+  border-radius: 16px;
+  background: #fffdfa;
+  color: #372b22;
+  text-align: center;
+}
+
+.toolbar-total span {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.toolbar-total strong {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.toolbar-stepper {
+  display: flex;
+  flex: 1.15 1 240px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 6px 10px;
+  border: 1px solid rgba(120, 88, 55, 0.16);
+  border-radius: 16px;
+  background: #fff8f1;
+  color: #372b22;
+}
+
+.toolbar-stepper span {
+  min-width: 0;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.toolbar-stepper button {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 999px;
+  background: #b8613c;
+  color: #fffdf8;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.toolbar-stepper strong {
+  min-width: 24px;
+  text-align: center;
+}
+
 .meeting-shell {
   grid-template-columns: minmax(320px, 390px) 1fr;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sidebar,
+.timer-panel {
+  min-height: 0;
 }
 
 .sidebar-card {
@@ -227,6 +339,8 @@ select {
   flex-direction: column;
   gap: 16px;
   height: 100%;
+  min-height: 0;
+  overflow: hidden;
   padding: 18px;
 }
 
@@ -245,10 +359,48 @@ select {
   font-weight: 700;
 }
 
+.role-countdown-card {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: #fff8f1;
+  border: 1px solid rgba(120, 88, 55, 0.16);
+}
+
+.role-countdown-card span,
+.role-countdown-card small {
+  color: #705f51;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.role-countdown-card strong {
+  color: #2b2119;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.role-countdown-card small {
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+}
+
+.log-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 0 4px 88px 0;
+  scrollbar-gutter: stable;
+}
+
 .log-table {
   grid-template-columns: 48px minmax(0, 1fr) 74px 74px;
   gap: 8px;
   align-content: start;
+  padding-bottom: 20px;
 }
 
 .log-row {
@@ -284,13 +436,90 @@ select {
   border-radius: 26px;
   padding: 2px;
   box-shadow: 0 24px 60px rgba(88, 63, 36, 0.16);
+  overflow: hidden;
 }
 
 .timer-panel-inner {
+  position: relative;
   min-height: 100%;
+  height: 100%;
+  overflow: auto;
   padding: 28px;
   border-radius: 24px;
   background: color-mix(in srgb, var(--signal-color) 82%, white);
+}
+
+.timer-side-rail {
+  position: absolute;
+  top: 28px;
+  left: 28px;
+  z-index: 2;
+  display: grid;
+  gap: 12px;
+  width: min(280px, calc(100% - 56px));
+}
+
+.timer-countdown-card {
+  width: 100%;
+  margin: 0;
+  background: rgba(255, 255, 255, 0.28);
+  border-color: rgba(255, 255, 255, 0.34);
+  backdrop-filter: blur(6px);
+}
+
+.timer-countdown-card span,
+.timer-countdown-card small,
+.timer-countdown-card strong {
+  color: inherit;
+}
+
+.shortcut-panel {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.24);
+  backdrop-filter: blur(6px);
+}
+
+.shortcut-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.shortcut-column {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.shortcut-panel-single .shortcut-grid {
+  grid-template-columns: 1fr;
+}
+
+.shortcut-panel-single .shortcut-column:empty {
+  display: none;
+}
+
+.shortcut-panel span {
+  color: inherit;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.shortcut-button {
+  width: 100%;
+  border: 1px solid rgba(120, 88, 55, 0.16);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: rgba(255, 248, 241, 0.9);
+  color: #372b22;
+  font-weight: 700;
+  text-align: left;
 }
 
 .role-display {
@@ -301,7 +530,7 @@ select {
 
 .time-display {
   margin: 18px 0;
-  font-size: clamp(4rem, 9vw, 6.8rem);
+  font-size: clamp(4rem, 12vh, 6.8rem);
   font-weight: 700;
   text-align: center;
 }
@@ -350,14 +579,15 @@ select {
 
 .timer-controls {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
   width: min(760px, 100%);
   margin: 28px auto 0;
 }
 
-.wide-button {
-  grid-column: span 3;
+.timer-control-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .arrow-button {
@@ -368,6 +598,7 @@ select {
 
 .modal-backdrop {
   position: fixed;
+  z-index: 20;
   inset: 0;
   display: flex;
   align-items: center;
@@ -401,7 +632,7 @@ select {
 }
 
 .report-table {
-  grid-template-columns: 1.15fr 1fr 0.72fr 0.72fr 0.82fr;
+  grid-template-columns: 1.05fr 1fr 0.78fr 0.78fr 0.66fr 0.82fr;
   gap: 12px 16px;
 }
 
@@ -431,53 +662,364 @@ select {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
   padding: 32px;
+}
+
+.projector-countdown {
+  position: absolute;
+  top: 32px;
+  left: 32px;
+  display: grid;
+  gap: 6px;
+  width: min(250px, 26vw);
+  min-width: 200px;
+  padding: clamp(12px, 1.8vh, 18px) clamp(14px, 1.8vw, 20px);
+  border: 1px solid currentColor;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(6px);
+  text-align: left;
+}
+
+.projector-countdown span,
+.projector-countdown small {
+  font-size: clamp(0.82rem, 1.3vw, 1rem);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.projector-countdown strong {
+  font-size: clamp(2rem, min(5vw, 6vh), 4rem);
+  line-height: 1;
 }
 
 .projector-card {
   width: min(1200px, 100%);
+  max-height: calc(100vh - 64px);
   text-align: center;
 }
 
 .projector-role {
-  font-size: clamp(2.2rem, 4vw, 3.8rem);
+  font-size: clamp(1.8rem, min(4vw, 6vh), 3.8rem);
   font-weight: 700;
 }
 
 .projector-time {
-  margin: 24px 0;
-  font-size: clamp(6rem, 14vw, 10rem);
+  margin: clamp(12px, 2vh, 24px) 0;
+  font-size: clamp(4rem, min(14vw, 22vh), 10rem);
   font-weight: 800;
 }
 
 .projector-signal {
-  font-size: clamp(2.2rem, 4vw, 4rem);
+  font-size: clamp(1.8rem, min(4vw, 6vh), 4rem);
   font-weight: 700;
   letter-spacing: 0.14em;
 }
 
 .projector-detail {
-  font-size: clamp(1.2rem, 2.4vw, 2rem);
+  margin: clamp(8px, 1.5vh, 16px) 0;
+  font-size: clamp(1rem, min(2.4vw, 3.6vh), 2rem);
 }
 
 @media (max-width: 980px) {
+  .meeting-screen,
+  .meeting-app-shell {
+    height: auto;
+    overflow: visible;
+  }
+
   .setup-grid,
   .meeting-shell {
     grid-template-columns: 1fr;
   }
 
-  .timer-controls {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .meeting-shell {
+    height: auto;
+    overflow: visible;
   }
 
-  .wide-button {
-    grid-column: span 2;
+  .sidebar-card {
+    height: auto;
+  }
+
+  .log-scroll {
+    max-height: 48vh;
+  }
+
+  .timer-panel-inner {
+    overflow: visible;
+  }
+
+  .timer-side-rail {
+    position: static;
+    width: min(560px, 100%);
+    margin-bottom: 14px;
+  }
+
+  .timer-controls {
+    width: min(560px, 100%);
+  }
+}
+
+@media (max-height: 820px) and (min-width: 981px) {
+  .app-shell {
+    padding: 14px;
+  }
+
+  .setup-shell,
+  .meeting-screen,
+  .meeting-shell,
+  .projector-shell {
+    min-height: calc(100vh - 28px);
+  }
+
+  .meeting-screen {
+    height: calc(100vh - 28px);
+    gap: 10px;
+  }
+
+  .meeting-toolbar {
+    gap: 8px;
+    padding: 8px;
+    border-radius: 16px;
+  }
+
+  .primary-button,
+  .secondary-button,
+  .accent-button,
+  .nav-button,
+  .ghost-button,
+  .arrow-button {
+    border-radius: 12px;
+    padding: 9px 12px;
+  }
+
+  .meeting-shell {
+    gap: 12px;
+    grid-template-columns: minmax(300px, 360px) 1fr;
+  }
+
+  .sidebar-card {
+    gap: 10px;
+    padding: 12px;
+    border-radius: 18px;
+  }
+
+  .sidebar-header h2 {
+    font-size: 1.25rem;
+  }
+
+  .eyebrow {
+    margin-bottom: 4px;
+    font-size: 0.7rem;
+  }
+
+  .step-pill {
+    padding: 6px 9px;
+  }
+
+  .role-countdown-card {
+    gap: 2px;
+    padding: 9px 12px;
+    border-radius: 14px;
+  }
+
+  .role-countdown-card span,
+  .role-countdown-card small {
+    font-size: 0.68rem;
+  }
+
+  .role-countdown-card strong {
+    font-size: 1.55rem;
+  }
+
+  .sidebar-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .sidebar-actions .secondary-button {
+    padding-inline: 8px;
+    font-size: 0.88rem;
+  }
+
+  .log-table {
+    grid-template-columns: 40px minmax(0, 1fr) 62px 62px;
+    gap: 6px;
+  }
+
+  .log-header {
+    font-size: 0.7rem;
+  }
+
+  .log-row {
+    min-height: 40px;
+    border-radius: 10px;
+    padding: 6px 8px;
+    font-size: 0.88rem;
+  }
+
+  .timer-panel {
+    border-radius: 18px;
+  }
+
+  .timer-panel-inner {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .timer-countdown-card {
+    margin-bottom: 8px;
+  }
+
+  .timer-side-rail {
+    top: 16px;
+    left: 16px;
+    gap: 8px;
+    width: min(240px, calc(100% - 32px));
+  }
+
+  .shortcut-panel {
+    gap: 6px;
+    padding: 9px;
+    border-radius: 14px;
+  }
+
+  .shortcut-grid,
+  .shortcut-column {
+    gap: 6px;
+  }
+
+  .shortcut-button {
+    padding: 8px 9px;
+    border-radius: 10px;
+    font-size: 0.86rem;
+  }
+
+  .role-display {
+    font-size: clamp(1.45rem, 4vh, 2.25rem);
+  }
+
+  .time-display {
+    margin: 8px 0;
+    font-size: clamp(3.2rem, 11vh, 5.3rem);
+  }
+
+  .progress-track {
+    height: 12px;
+    margin-bottom: 10px;
+  }
+
+  .signal-display {
+    font-size: clamp(1.35rem, 4vh, 2.2rem);
+  }
+
+  .meta-line {
+    margin-top: 6px;
+    font-size: 0.92rem;
+  }
+
+  .table-topic-card {
+    margin-top: 12px;
+    padding: 10px;
+    border-radius: 14px;
+  }
+
+  .table-topic-card label {
+    margin-bottom: 6px;
+  }
+
+  input,
+  select {
+    padding: 9px 11px;
+    border-radius: 11px;
+  }
+
+  .timer-controls {
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .timer-control-row {
+    gap: 8px;
+  }
+
+  .arrow-button {
+    font-size: 1.4rem;
+  }
+}
+
+@media (max-height: 680px) and (min-width: 981px) {
+  .meeting-toolbar .nav-button {
+    flex: 1 1 130px;
+  }
+
+  .meeting-shell {
+    grid-template-columns: minmax(280px, 340px) 1fr;
+  }
+
+  .sidebar-header {
+    align-items: center;
+  }
+
+  .role-countdown-card {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+  }
+
+  .role-countdown-card small {
+    grid-column: 1 / -1;
+  }
+
+  .timer-panel-inner {
+    padding: 12px;
+  }
+
+  .timer-side-rail {
+    top: 12px;
+    left: 12px;
+    width: min(220px, calc(100% - 24px));
+  }
+
+  .role-display {
+    font-size: clamp(1.25rem, 3.5vh, 1.8rem);
+  }
+
+  .time-display {
+    font-size: clamp(2.8rem, 10vh, 4.4rem);
+  }
+
+  .signal-display {
+    font-size: clamp(1.1rem, 3.5vh, 1.75rem);
+  }
+
+  .meta-line {
+    font-size: 0.84rem;
+  }
+
+  .timer-controls {
+    margin-top: 10px;
   }
 }
 
 @media (max-width: 720px) {
   .app-shell {
     padding: 14px;
+  }
+
+  .meeting-toolbar {
+    padding: 10px;
+  }
+
+  .meeting-toolbar .nav-button {
+    flex: 1 1 150px;
   }
 
   .role-table,
@@ -494,11 +1036,18 @@ select {
     grid-template-columns: 40px minmax(0, 1fr) 68px 68px;
   }
 
-  .timer-controls {
+  .timer-control-row {
     grid-template-columns: 1fr;
   }
 
-  .wide-button {
-    grid-column: span 1;
+  .projector-countdown {
+    position: static;
+    width: 100%;
+    margin-bottom: 20px;
+  }
+
+  .projector-shell {
+    flex-direction: column;
+    align-items: stretch;
   }
 }

@@ -3,6 +3,7 @@ import {
   buildMeetingEntries,
   DEFAULT_PROJECT,
   DEFAULT_SLOT_COUNTS,
+  SPEECH_PROJECT_OPTIONS,
   getEntryKey,
   getSignal,
   getSlotGroup,
@@ -10,8 +11,8 @@ import {
   isSpeechRole,
 } from "./meetingFlow";
 
-const PROJECT_OPTIONS = ["P1:Ice Breaker", "P2 and Above"];
-const STORAGE_KEY = "toastmasters-timer-projector-state";
+const PROJECT_OPTIONS = SPEECH_PROJECT_OPTIONS;
+const STORAGE_KEY = "tm-timer-projector-state";
 const SIGNAL_COLORS = {
   default: "#f6f1e8",
   green: "#2d8a57",
@@ -50,6 +51,14 @@ function getTimingStatus(usedSeconds, allocatedSeconds, minimumSeconds) {
 
 function buildReportRows(entries, roleNames, elapsedByKey) {
   const grouped = new Map();
+  const totalAllocatedByRole = new Map();
+
+  for (const entry of entries) {
+    totalAllocatedByRole.set(
+      entry.role,
+      (totalAllocatedByRole.get(entry.role) ?? 0) + entry.allocatedSeconds,
+    );
+  }
 
   for (const entry of entries) {
     const used = elapsedByKey[getEntryKey(entry)] ?? 0;
@@ -73,10 +82,47 @@ function buildReportRows(entries, roleNames, elapsedByKey) {
 
   return Array.from(grouped.values()).map((row) => ({
     ...row,
-    allocatedText: formatTime(row.allocated),
+    allocatedUntilNowText: formatTime(row.allocated),
+    totalAllocatedText: formatTime(totalAllocatedByRole.get(row.role) ?? row.allocated),
     usedText: formatTime(row.used),
     status: getTimingStatus(row.used, row.allocated, row.minimum),
   }));
+}
+
+function getRoleTiming(entries, elapsedByKey, currentEntry, elapsedSeconds) {
+  if (!currentEntry) {
+    return {
+      allocated: 0,
+      used: 0,
+      remaining: 0,
+    };
+  }
+
+  const currentKey = getEntryKey(currentEntry);
+  const allocated = entries
+    .filter((entry) => entry.role === currentEntry.role)
+    .reduce((total, entry) => total + entry.allocatedSeconds, 0);
+  const used = entries
+    .filter((entry) => entry.role === currentEntry.role)
+    .reduce((total, entry) => {
+      const key = getEntryKey(entry);
+      const duration = key === currentKey ? elapsedSeconds : elapsedByKey[key] ?? 0;
+      return total + duration;
+    }, 0);
+
+  return {
+    allocated,
+    used,
+    remaining: Math.max(0, allocated - used),
+  };
+}
+
+function getTotalAllocatedSeconds(entries) {
+  return entries.reduce((total, entry) => total + entry.allocatedSeconds, 0);
+}
+
+function isFinalPresidingOfficerEntry(entry) {
+  return entry?.role === "Presiding Officer" && entry.entryType === "Conclusion";
 }
 
 function getAgendaText(entries, currentIndex) {
@@ -87,6 +133,92 @@ function getAgendaText(entries, currentIndex) {
     ? "Next: Meeting complete"
     : `Next: ${entries[currentIndex + 1].role} (${entries[currentIndex + 1].entryType})`;
   return `${previousText} | ${nextText}`;
+}
+
+function findEntryIndex(entries, role, entryType) {
+  return entries.findIndex((entry) => entry.role === role && entry.entryType === entryType);
+}
+
+function getShortcutTargets(entries, currentEntry, currentIndex) {
+  if (!currentEntry) {
+    return [];
+  }
+
+  const shortcuts = [];
+  const addShortcut = (label, role, entryType, side = "left") => {
+    const index = findEntryIndex(entries, role, entryType);
+    if (index >= 0 && index !== currentIndex) {
+      shortcuts.push({
+        key: `${role}__${entryType}`,
+        label,
+        index,
+        side,
+      });
+    }
+  };
+
+  const speakerIndices = entries
+    .map((entry, index) => (getSlotGroup(entry.role) === "Speaker" ? index : -1))
+    .filter((index) => index >= 0);
+  const speakerIntroIndex = findEntryIndex(entries, "TMOD", "Speaker Intro");
+  const firstSpeakerIndex = speakerIndices[0] ?? -1;
+  const lastSpeakerIndex = speakerIndices[speakerIndices.length - 1] ?? -1;
+
+  if (
+    speakerIntroIndex >= 0
+    && firstSpeakerIndex >= 0
+    && currentIndex >= speakerIntroIndex
+    && currentIndex <= lastSpeakerIndex
+  ) {
+    if (currentIndex === lastSpeakerIndex) {
+      addShortcut("TMOD Part2", "TMOD", "Part2", "right");
+    } else {
+      addShortcut("TMOD Speaker Intro", "TMOD", "Speaker Intro");
+    }
+  }
+
+  if (currentEntry.role === "General Evaluator" && currentEntry.entryType === "TAG Intro") {
+    addShortcut("Timer", "Timer", "Intro");
+    addShortcut("Ah-Counter", "Ah-Counter", "Intro");
+    addShortcut("Grammarian", "Grammarian", "Intro");
+  }
+
+  if (currentEntry.role === "TMOD" && currentEntry.entryType === "Speaker Intro") {
+    entries
+      .filter((entry) => getSlotGroup(entry.role) === "Speaker")
+      .forEach((entry) => addShortcut(entry.role, entry.role, entry.entryType));
+  }
+
+  if (
+    ["Timer", "Ah-Counter", "Grammarian"].includes(currentEntry.role)
+    && currentEntry.entryType === "Intro"
+  ) {
+    addShortcut("GE TAG Intro", "General Evaluator", "TAG Intro");
+    addShortcut("GE Speech Objectives", "General Evaluator", "Speech Objectives", "right");
+  }
+
+  if (currentEntry.role === "General Evaluator" && currentEntry.entryType === "Eval Intro") {
+    entries
+      .filter((entry) => getSlotGroup(entry.role) === "Evaluator" && entry.entryType === "Evaluation")
+      .forEach((entry) => addShortcut(entry.role, entry.role, entry.entryType));
+    addShortcut("Ah-Counter", "Ah-Counter", "Report", "right");
+    addShortcut("Grammarian", "Grammarian", "Report", "right");
+    addShortcut("Timer", "Timer", "Report", "right");
+  }
+
+  if (getSlotGroup(currentEntry.role) === "Evaluator" && currentEntry.entryType === "Evaluation") {
+    addShortcut("GE Eval Intro", "General Evaluator", "Eval Intro");
+  }
+
+  if (
+    ["Ah-Counter", "Grammarian", "Timer"].includes(currentEntry.role)
+    && currentEntry.entryType === "Report"
+  ) {
+    addShortcut("GE Eval Intro", "General Evaluator", "Eval Intro");
+    addShortcut("GE Final Report", "General Evaluator", "Final GE report", "right");
+  }
+
+  return shortcuts;
 }
 
 function useProjectorSnapshot(enabled) {
@@ -162,6 +294,7 @@ function SetupScreen({
   roleNames,
   roleProjects,
   slotCounts,
+  totalAllocatedSeconds,
   onRoleNameChange,
   onProjectChange,
   onSlotCountChange,
@@ -172,11 +305,12 @@ function SetupScreen({
   return (
     <section className="setup-shell">
       <header className="hero-card">
-        <p className="eyebrow">Toastmasters Timer</p>
+        <p className="eyebrow">TM Timer</p>
         <h1>Meeting setup</h1>
         <p className="hero-copy">
-          Configure the live agenda, assign speakers, and then run the meeting from a single browser page that can be hosted inside SharePoint.
+          Configure the live agenda, assign speakers, and then run the meeting.
         </p>
+        <p className="hero-meta">Total allocated meeting time: {formatTime(totalAllocatedSeconds)}</p>
       </header>
 
       <div className="setup-grid">
@@ -327,8 +461,9 @@ function ReportModal({ rows, onClose, onCopy, onExport }) {
     <Modal title="Final report" onClose={onClose} wide>
       <div className="report-table">
         <div className="report-header">Role</div>
-        <div className="report-header">Toastmaster</div>
-        <div className="report-header">Time Allocated</div>
+        <div className="report-header">TM</div>
+        <div className="report-header">Allocated until now</div>
+        <div className="report-header">Total allocated</div>
         <div className="report-header">Time Used</div>
         <div className="report-header">Status</div>
         {rows.length === 0 ? (
@@ -338,7 +473,8 @@ function ReportModal({ rows, onClose, onCopy, onExport }) {
             <FragmentRow key={row.role}>
               <div>{row.role}</div>
               <div>{row.name}</div>
-              <div>{row.allocatedText}</div>
+              <div>{row.allocatedUntilNowText}</div>
+              <div>{row.totalAllocatedText}</div>
               <div>{row.usedText}</div>
               <div>{row.status}</div>
             </FragmentRow>
@@ -367,7 +503,7 @@ function EditLogModal({ entry, initialName, initialDuration, onClose, onSave }) 
         <div className="muted-text full-width">
           {entry.role} ({entry.entryType})
         </div>
-        <label htmlFor="edit-name">Toastmaster</label>
+        <label htmlFor="edit-name">TM</label>
         <input
           id="edit-name"
           value={name}
@@ -405,10 +541,10 @@ function EditLogModal({ entry, initialName, initialDuration, onClose, onSave }) 
 
 function AboutModal({ onClose }) {
   return (
-    <Modal title="About Toastmasters Timer" onClose={onClose}>
+    <Modal title="About TM Timer" onClose={onClose}>
       <div className="about-copy">
         <p>
-          Toastmasters Timer helps run a full meeting agenda, track each role, show color signals, manage role players, and produce a final timing report in the browser.
+          TM Timer helps run a full meeting agenda, track each role, show color signals, manage role players, and produce a final timing report in the browser.
         </p>
         <p>Publisher: Nithin Mulley</p>
       </div>
@@ -448,6 +584,11 @@ function ProjectorView({ snapshot }) {
 
   return (
     <main className="projector-shell" style={{ background, color: foreground }}>
+      <div className="projector-countdown">
+        <span>Role time remaining</span>
+        <strong>{snapshot.roleRemainingText}</strong>
+        <small>{snapshot.roleTimingText}</small>
+      </div>
       <div className="projector-card">
         <p className="projector-role">{snapshot.roleDisplay}</p>
         <p className="projector-time">{snapshot.elapsedText}</p>
@@ -474,6 +615,8 @@ function App() {
   const [elapsedByKey, setElapsedByKey] = useState({});
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [timerRunning, setTimerRunning] = useState(false);
+  const [meetingElapsedSeconds, setMeetingElapsedSeconds] = useState(0);
+  const [meetingClockRunning, setMeetingClockRunning] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [rolePlayersOpen, setRolePlayersOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
@@ -502,6 +645,20 @@ function App() {
     () => buildReportRows(meetingEntries, roleNames, elapsedByKey),
     [elapsedByKey, meetingEntries, roleNames],
   );
+  const currentRoleTiming = useMemo(
+    () => getRoleTiming(meetingEntries, elapsedByKey, currentEntry, elapsedSeconds),
+    [currentEntry, elapsedByKey, elapsedSeconds, meetingEntries],
+  );
+  const totalAllocatedSeconds = useMemo(
+    () => getTotalAllocatedSeconds(meetingEntries),
+    [meetingEntries],
+  );
+  const shortcutTargets = useMemo(
+    () => getShortcutTargets(meetingEntries, currentEntry, currentEntryIndex),
+    [currentEntry, currentEntryIndex, meetingEntries],
+  );
+  const leftShortcutTargets = shortcutTargets.filter((shortcut) => shortcut.side !== "right");
+  const rightShortcutTargets = shortcutTargets.filter((shortcut) => shortcut.side === "right");
 
   useEffect(() => {
     if (!timerRunning) {
@@ -513,6 +670,17 @@ function App() {
     }, 1000);
     return () => window.clearInterval(intervalId);
   }, [timerRunning]);
+
+  useEffect(() => {
+    if (!meetingClockRunning) {
+      return undefined;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setMeetingElapsedSeconds((seconds) => seconds + 1);
+    }, 1000);
+    return () => window.clearInterval(intervalId);
+  }, [meetingClockRunning]);
 
   useEffect(() => {
     if (screen !== "meeting") {
@@ -571,13 +739,24 @@ function App() {
     const snapshot = {
       roleDisplay: currentRoleDisplay,
       elapsedText: formatTime(elapsedSeconds),
+      roleRemainingText: formatTime(currentRoleTiming.remaining),
+      roleTimingText: `Used of ${formatTime(currentRoleTiming.allocated)}`,
       signal,
       signalText: signal === "default" ? "READY" : signal.toUpperCase(),
       allocationText: getAllocationText(currentEntry, elapsedSeconds),
       progressText: `Transition ${currentEntryIndex + 1} of ${meetingEntries.length}`,
     };
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
-  }, [currentEntry, currentEntryIndex, currentRoleDisplay, elapsedSeconds, meetingEntries.length, screen, signal]);
+  }, [
+    currentEntry,
+    currentEntryIndex,
+    currentRoleDisplay,
+    currentRoleTiming,
+    elapsedSeconds,
+    meetingEntries.length,
+    screen,
+    signal,
+  ]);
 
   useEffect(() => {
     if (screen === "meeting" && getSlotGroup(currentEntry?.role) === "Table Topic Speaker") {
@@ -623,7 +802,21 @@ function App() {
     setElapsedByKey({});
     setElapsedSeconds(0);
     setTimerRunning(false);
+    setMeetingElapsedSeconds(0);
+    setMeetingClockRunning(false);
   }
+
+  useEffect(() => {
+    if (
+      timerRunning
+      && !meetingClockRunning
+      && currentEntry
+      && currentEntry.role === "Presiding Officer"
+      && currentEntry.entryType === "Intro"
+    ) {
+      setMeetingClockRunning(true);
+    }
+  }, [timerRunning, meetingClockRunning, currentEntry]);
 
   function finishTimer() {
     if (!currentEntry || elapsedSeconds <= 0) {
@@ -634,6 +827,9 @@ function App() {
     saveCurrentElapsed();
     if (currentEntryIndex >= meetingEntries.length - 1) {
       setTimerRunning(false);
+      if (isFinalPresidingOfficerEntry(currentEntry)) {
+        setMeetingClockRunning(false);
+      }
       return;
     }
     moveToEntry(currentEntryIndex + 1);
@@ -662,22 +858,40 @@ function App() {
     setEditingKey(null);
     setElapsedByKey({});
     setElapsedSeconds(0);
+    setMeetingElapsedSeconds(0);
+    setMeetingClockRunning(false);
     setCurrentEntryIndex(0);
     setScreen("setup");
   }
 
   function handleCopyReport() {
-    const lines = ["Role\tToastmaster\tTime Allocated\tTime Used\tStatus"];
+    const lines = ["Role\tTM\tAllocated until now\tTotal allocated\tTime Used\tStatus"];
     for (const row of reportRows) {
-      lines.push([row.role, row.name, row.allocatedText, row.usedText, row.status].join("\t"));
+      lines.push([
+        row.role,
+        row.name,
+        row.allocatedUntilNowText,
+        row.totalAllocatedText,
+        row.usedText,
+        row.status,
+      ].join("\t"));
     }
     navigator.clipboard?.writeText(lines.join("\n"));
   }
 
   function handleExportCsv() {
     const rows = [
-      ["Role", "Toastmaster", "Time Allocated", "Time Used", "Status"],
-      ...reportRows.map((row) => [row.role, row.name, row.allocatedText, row.usedText, row.status]),
+      ["Meeting elapsed time", formatTime(meetingElapsedSeconds)],
+      [],
+      ["Role", "TM", "Allocated until now", "Total allocated", "Time Used", "Status"],
+      ...reportRows.map((row) => [
+        row.role,
+        row.name,
+        row.allocatedUntilNowText,
+        row.totalAllocatedText,
+        row.usedText,
+        row.status,
+      ]),
     ];
     const csv = rows
       .map((row) => row.map((value) => escapeCsv(value)).join(","))
@@ -686,7 +900,7 @@ function App() {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = "toastmasters-final-report.csv";
+    anchor.download = "tm-final-report.csv";
     anchor.click();
     URL.revokeObjectURL(url);
   }
@@ -716,186 +930,270 @@ function App() {
     : null;
 
   return (
-    <main className="app-shell">
+    <main className={`app-shell ${screen === "meeting" ? "meeting-app-shell" : ""}`}>
       {screen === "setup" ? (
         <SetupScreen
           meetingEntries={meetingEntries}
           roleNames={roleNames}
           roleProjects={roleProjects}
           slotCounts={slotCounts}
+          totalAllocatedSeconds={totalAllocatedSeconds}
           onRoleNameChange={(role, value) => setRoleNames((current) => ({ ...current, [role]: value }))}
           onProjectChange={(role, value) => setRoleProjects((current) => ({ ...current, [role]: value }))}
           onSlotCountChange={(group, value) => setSlotCounts((current) => ({ ...current, [group]: value }))}
           onStartMeeting={startMeeting}
         />
       ) : (
-        <section className="meeting-shell" style={{ "--signal-color": currentSignalColor }}>
-          <aside className="sidebar">
-            <div className="sidebar-card">
-              <div className="sidebar-header">
-                <div>
-                  <p className="eyebrow">Meeting Flow</p>
-                  <h2>Agenda</h2>
-                </div>
-                <span className="step-pill">
-                  {currentEntryIndex + 1}/{meetingEntries.length}
-                </span>
-              </div>
-              <div className="log-table">
-                <div className="log-header">#</div>
-                <div className="log-header">Transition</div>
-                <div className="log-header">Alloc</div>
-                <div className="log-header">Time</div>
-                {meetingEntries.map((entry, index) => {
-                  const key = getEntryKey(entry);
-                  const duration = index === currentEntryIndex && elapsedSeconds > 0
-                    ? elapsedSeconds
-                    : elapsedByKey[key] ?? 0;
-                  const hasDuration = duration > 0;
-                  const isCurrent = index === currentEntryIndex;
-                  const name = roleNames[entry.role]?.trim();
-                  const roleText = name ? `${entry.role} - ${name}` : entry.role;
-
-                  return (
-                    <FragmentRow key={key}>
-                      <button
-                        type="button"
-                        className={`log-row ${isCurrent ? "log-row-current" : hasDuration ? "log-row-complete" : ""}`}
-                        onClick={() => moveToEntry(index)}
-                      >
-                        {index + 1}
-                      </button>
-                      <button
-                        type="button"
-                        className={`log-row ${isCurrent ? "log-row-current" : hasDuration ? "log-row-complete" : ""}`}
-                        onClick={() => moveToEntry(index)}
-                      >
-                        {roleText} ({entry.entryType})
-                      </button>
-                      <button
-                        type="button"
-                        className={`log-row ${isCurrent ? "log-row-current" : hasDuration ? "log-row-complete" : ""}`}
-                        onClick={() => moveToEntry(index)}
-                      >
-                        {formatTime(entry.allocatedSeconds)}
-                      </button>
-                      <button
-                        type="button"
-                        className={`log-row ${isCurrent ? "log-row-current" : hasDuration ? "log-row-complete" : ""}`}
-                        onClick={() => moveToEntry(index)}
-                      >
-                        {hasDuration ? formatTime(duration) : ""}
-                      </button>
-                    </FragmentRow>
-                  );
-                })}
-              </div>
-              <div className="sidebar-actions">
-                <button className="secondary-button" type="button" onClick={() => setEditingKey(currentEntryKey)}>
-                  Edit log
-                </button>
-                <button
-                  className="secondary-button"
-                  type="button"
-                  onClick={() => {
-                    if (!currentEntryKey || !(elapsedByKey[currentEntryKey] || elapsedSeconds)) {
-                      window.alert("That transition does not have a recorded time.");
-                      return;
-                    }
-                    if (!window.confirm("Clear time for the selected transition?")) {
-                      return;
-                    }
-                    setElapsedByKey((current) => {
-                      const next = { ...current };
-                      delete next[currentEntryKey];
-                      return next;
-                    });
-                    setElapsedSeconds(0);
-                  }}
-                >
-                  Delete log
-                </button>
-                <button className="secondary-button" type="button" onClick={handleCopyReport}>
-                  Copy report
-                </button>
-                <button className="secondary-button" type="button" onClick={handleExportCsv}>
-                  Export CSV
-                </button>
-              </div>
-              <div className="sidebar-menu">
-                <button className="nav-button" type="button" onClick={() => setReportOpen(true)}>
-                  Final Report
-                </button>
-                <button className="nav-button" type="button" onClick={() => setRolePlayersOpen(true)}>
-                  Role Players
-                </button>
-                <button className="nav-button" type="button" onClick={() => setReloadOpen(true)}>
-                  Reload Meeting
-                </button>
-                <button className="nav-button" type="button" onClick={() => setAboutOpen(true)}>
-                  About
-                </button>
-              </div>
+        <section className="meeting-screen" style={{ "--signal-color": currentSignalColor }}>
+          <div className="meeting-toolbar">
+            <div className="toolbar-total">
+              <span>Meeting time</span>
+              <strong>{formatTime(meetingElapsedSeconds)}</strong>
             </div>
-          </aside>
+            <button className="nav-button" type="button" onClick={() => setRolePlayersOpen(true)}>
+              Role Players
+            </button>
+            <button className="nav-button" type="button" onClick={() => setReportOpen(true)}>
+              Final Report
+            </button>
+            <button className="nav-button" type="button" onClick={handleExportCsv}>
+              Export CSV
+            </button>
+            <button className="nav-button" type="button" onClick={() => setReloadOpen(true)}>
+              Reload Meeting
+            </button>
+            <button className="nav-button" type="button" onClick={() => setAboutOpen(true)}>
+              About
+            </button>
+            <div className="toolbar-stepper" aria-label="Table Topic Speaker count">
+              <span>Table Topic Speakers</span>
+              <button
+                type="button"
+                onClick={() => setSlotCounts((current) => ({
+                  ...current,
+                  "Table Topic Speaker": Math.max(1, current["Table Topic Speaker"] - 1),
+                }))}
+              >
+                -
+              </button>
+              <strong>{slotCounts["Table Topic Speaker"]}</strong>
+              <button
+                type="button"
+                onClick={() => setSlotCounts((current) => ({
+                  ...current,
+                  "Table Topic Speaker": current["Table Topic Speaker"] + 1,
+                }))}
+              >
+                +
+              </button>
+            </div>
+          </div>
 
-          <section className="timer-panel" style={{ background: currentSignalColor, color: foreground }}>
-            <div className="timer-panel-inner">
-              <h1 className="role-display">{currentRoleDisplay}</h1>
-              <div className="time-display">{formatTime(elapsedSeconds)}</div>
-              <div className="progress-track">
-                <div
-                  className="progress-fill"
-                  style={{
-                    width: `${Math.min(100, (elapsedSeconds / Math.max(currentEntry.allocatedSeconds, 1)) * 100)}%`,
-                  }}
-                />
-              </div>
-              <div className="signal-display">
-                {signal === "default" ? "Ready" : signal.toUpperCase()}
-              </div>
-              <p className="meta-line">{getAllocationText(currentEntry, elapsedSeconds)}</p>
-              <p className="meta-line">Transition {currentEntryIndex + 1} of {meetingEntries.length}</p>
-              <p className="meta-line">{getAgendaText(meetingEntries, currentEntryIndex)}</p>
+          <div className="meeting-shell">
+            <aside className="sidebar">
+              <div className="sidebar-card">
+                <div className="sidebar-header">
+                  <div>
+                    <p className="eyebrow">Meeting Flow</p>
+                    <h2>Agenda</h2>
+                  </div>
+                  <span className="step-pill">
+                    {currentEntryIndex + 1}/{meetingEntries.length}
+                  </span>
+                </div>
+                <div className="sidebar-actions">
+                  <button className="secondary-button" type="button" onClick={() => setEditingKey(currentEntryKey)}>
+                    Edit log
+                  </button>
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    onClick={() => {
+                      if (!currentEntryKey || !(elapsedByKey[currentEntryKey] || elapsedSeconds)) {
+                        window.alert("That transition does not have a recorded time.");
+                        return;
+                      }
+                      if (!window.confirm("Clear time for the selected transition?")) {
+                        return;
+                      }
+                      setElapsedByKey((current) => {
+                        const next = { ...current };
+                        delete next[currentEntryKey];
+                        return next;
+                      });
+                      setElapsedSeconds(0);
+                    }}
+                  >
+                    Delete log
+                  </button>
+                  <button className="secondary-button" type="button" onClick={handleCopyReport}>
+                    Copy report
+                  </button>
+                </div>
+                <div className="log-scroll" aria-label="Meeting transitions">
+                  <div className="log-table">
+                    <div className="log-header">#</div>
+                    <div className="log-header">Transition</div>
+                    <div className="log-header">Alloc</div>
+                    <div className="log-header">Time</div>
+                    {meetingEntries.map((entry, index) => {
+                      const key = getEntryKey(entry);
+                      const duration = index === currentEntryIndex && elapsedSeconds > 0
+                        ? elapsedSeconds
+                        : elapsedByKey[key] ?? 0;
+                      const hasDuration = duration > 0;
+                      const isCurrent = index === currentEntryIndex;
+                      const name = roleNames[entry.role]?.trim();
+                      const roleText = name ? `${entry.role} - ${name}` : entry.role;
 
-              {getSlotGroup(currentEntry.role) === "Table Topic Speaker" ? (
-                <div className="table-topic-card">
-                  <label htmlFor="table-topic-name">Table Topic name</label>
-                  <input
-                    id="table-topic-name"
-                    ref={tableTopicInputRef}
-                    value={roleNames[currentEntry.role] ?? ""}
-                    onChange={(event) => setRoleNames((current) => ({ ...current, [currentEntry.role]: event.target.value }))}
-                    placeholder="Enter speaker name"
+                      return (
+                        <FragmentRow key={key}>
+                          <button
+                            type="button"
+                            className={`log-row ${isCurrent ? "log-row-current" : hasDuration ? "log-row-complete" : ""}`}
+                            onClick={() => moveToEntry(index)}
+                          >
+                            {index + 1}
+                          </button>
+                          <button
+                            type="button"
+                            className={`log-row ${isCurrent ? "log-row-current" : hasDuration ? "log-row-complete" : ""}`}
+                            onClick={() => moveToEntry(index)}
+                          >
+                            {roleText} ({entry.entryType})
+                          </button>
+                          <button
+                            type="button"
+                            className={`log-row ${isCurrent ? "log-row-current" : hasDuration ? "log-row-complete" : ""}`}
+                            onClick={() => moveToEntry(index)}
+                          >
+                            {formatTime(entry.allocatedSeconds)}
+                          </button>
+                          <button
+                            type="button"
+                            className={`log-row ${isCurrent ? "log-row-current" : hasDuration ? "log-row-complete" : ""}`}
+                            onClick={() => moveToEntry(index)}
+                          >
+                            {hasDuration ? formatTime(duration) : ""}
+                          </button>
+                        </FragmentRow>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            </aside>
+
+            <section className="timer-panel" style={{ background: currentSignalColor, color: foreground }}>
+              <div className="timer-panel-inner">
+                <div className="timer-side-rail">
+                  <div className="role-countdown-card timer-countdown-card">
+                    <span>Role time remaining</span>
+                    <strong>{formatTime(currentRoleTiming.remaining)}</strong>
+                    <small>
+                      Used of {formatTime(currentRoleTiming.allocated)}
+                    </small>
+                  </div>
+                  {shortcutTargets.length > 0 ? (
+                    <div
+                      className={`shortcut-panel ${
+                        leftShortcutTargets.length > 0 && rightShortcutTargets.length > 0
+                          ? ""
+                          : "shortcut-panel-single"
+                      }`}
+                      aria-label="Transition shortcuts"
+                    >
+                      <span>Shortcuts</span>
+                      <div className="shortcut-grid">
+                        <div className="shortcut-column">
+                          {leftShortcutTargets.map((shortcut) => (
+                            <button
+                              className="shortcut-button"
+                              key={shortcut.key}
+                              type="button"
+                              onClick={() => moveToEntry(shortcut.index)}
+                            >
+                              {shortcut.label}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="shortcut-column">
+                          {rightShortcutTargets.map((shortcut) => (
+                            <button
+                              className="shortcut-button"
+                              key={shortcut.key}
+                              type="button"
+                              onClick={() => moveToEntry(shortcut.index)}
+                            >
+                              {shortcut.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+                <h1 className="role-display">{currentRoleDisplay}</h1>
+                <div className="time-display">{formatTime(elapsedSeconds)}</div>
+                <div className="progress-track">
+                  <div
+                    className="progress-fill"
+                    style={{
+                      width: `${Math.min(100, (elapsedSeconds / Math.max(currentEntry.allocatedSeconds, 1)) * 100)}%`,
+                    }}
                   />
                 </div>
-              ) : null}
+                <div className="signal-display">
+                  {signal === "default" ? "Ready" : signal.toUpperCase()}
+                </div>
+                <p className="meta-line">{getAllocationText(currentEntry, elapsedSeconds)}</p>
+                <p className="meta-line">Transition {currentEntryIndex + 1} of {meetingEntries.length}</p>
+                <p className="meta-line">{getAgendaText(meetingEntries, currentEntryIndex)}</p>
 
-              <div className="timer-controls">
-                <button className="primary-button" type="button" onClick={() => setTimerRunning(true)} disabled={timerRunning}>
-                  {elapsedSeconds > 0 ? "Resume" : "Start"}
-                </button>
-                <button className="secondary-button" type="button" onClick={() => setTimerRunning(false)} disabled={!timerRunning}>
-                  Pause
-                </button>
-                <button className="accent-button" type="button" onClick={finishTimer} disabled={elapsedSeconds <= 0}>
-                  Finish / Record
-                </button>
-                <button className="arrow-button" type="button" onClick={() => moveToEntry(currentEntryIndex - 1)} disabled={currentEntryIndex === 0}>
-                  {"\u2190"}
-                </button>
-                <button className="arrow-button" type="button" onClick={() => moveToEntry(currentEntryIndex + 1)} disabled={currentEntryIndex >= meetingEntries.length - 1}>
-                  {"\u2192"}
-                </button>
-                <button className="secondary-button" type="button" onClick={resetCurrentTimer}>
-                  Reset timer
-                </button>
-                <button className="secondary-button wide-button" type="button" onClick={openProjectorView}>
-                  Projector Mode
-                </button>
+                {getSlotGroup(currentEntry.role) === "Table Topic Speaker" ? (
+                  <div className="table-topic-card">
+                    <label htmlFor="table-topic-name">Table Topic name</label>
+                    <input
+                      id="table-topic-name"
+                      ref={tableTopicInputRef}
+                      value={roleNames[currentEntry.role] ?? ""}
+                      onChange={(event) => setRoleNames((current) => ({ ...current, [currentEntry.role]: event.target.value }))}
+                      placeholder="Enter speaker name"
+                    />
+                  </div>
+                ) : null}
+
+                <div className="timer-controls">
+                  <div className="timer-control-row">
+                    <button
+                      className="primary-button"
+                      type="button"
+                      onClick={() => setTimerRunning((running) => !running)}
+                    >
+                      {timerRunning ? "Pause" : elapsedSeconds > 0 ? "Resume" : "Start"}
+                    </button>
+                    <button className="accent-button" type="button" onClick={finishTimer} disabled={elapsedSeconds <= 0}>
+                      Finish
+                    </button>
+                    <button className="secondary-button" type="button" onClick={resetCurrentTimer}>
+                      Reset
+                    </button>
+                  </div>
+                  <div className="timer-control-row">
+                    <button className="arrow-button" type="button" onClick={() => moveToEntry(currentEntryIndex - 1)} disabled={currentEntryIndex === 0}>
+                      {"\u2190"}
+                    </button>
+                    <button className="arrow-button" type="button" onClick={() => moveToEntry(currentEntryIndex + 1)} disabled={currentEntryIndex >= meetingEntries.length - 1}>
+                      {"\u2192"}
+                    </button>
+                    <button className="secondary-button" type="button" onClick={openProjectorView}>
+                      Projector Mode
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
+          </div>
         </section>
       )}
 
@@ -944,6 +1242,9 @@ function App() {
             setElapsedByKey((current) => ({ ...current, [getEntryKey(editingEntry)]: duration }));
             if (getEntryKey(editingEntry) === currentEntryKey) {
               setElapsedSeconds(duration);
+            }
+            if (duration > 0 && isFinalPresidingOfficerEntry(editingEntry)) {
+              setMeetingClockRunning(false);
             }
             setEditingKey(null);
           }}

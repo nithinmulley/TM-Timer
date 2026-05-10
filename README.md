@@ -1,4 +1,4 @@
-# Toastmasters Timer Web App
+# TM Timer Web App
 
 This project is now a small React web app intended for browser hosting, including SharePoint-friendly static hosting.
 

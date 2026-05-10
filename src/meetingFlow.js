@@ -6,12 +6,12 @@ Timer - Intro - 1 min - Red @ 1min
 Ah-Counter - Intro - 1 min - Red @ 1min
 Grammarian - Intro - 2 mins - Red @ 2mins
 General Evaluator - Speech Objectives - 2 Min - Red @ 2mins
-TMOD - Speaker Intro - 1 min - Red @ 1min
+TMOD - Speaker Intro - 2 min - Red @ 2min
 Speaker 1 - Speech - 6 or 7 mins - Green @ 4mins or 5mins, Yellow @ 5mins or 6mins, Red @ 6mins or 7mins
 Speaker 2 - Speech - 6 or 7 mins - Green @ 4mins or 5mins, Yellow @ 5mins or 6mins, Red @ 6mins or 7mins
 Speaker 3 - Speech - 6 or 7 mins - Green @ 4mins or 5mins, Yellow @ 5mins or 6mins, Red @ 6mins or 7mins
 TMOD - Part2 - 2 mins - Red @ 2mins
-General Evaluator - Eval Intro - 1 min - Red @ 1mins
+General Evaluator - Eval Intro - 2 min - Red @ 2mins
 Evaluator 1 - Evaluation - 2 mins - Green @ 1min, Yellow @ 1.5min, Red @ 2mins
 Evaluator 2 - Evaluation - 2 mins - Green @ 1min, Yellow @ 1.5min, Red @ 2mins
 Evaluator 3 - Evaluation - 2 mins - Green @ 1min, Yellow @ 1.5min, Red @ 2mins
@@ -31,13 +31,19 @@ Presiding Officer - Conclusion - 1 min - Red @ 1min`;
 
 export const DEFAULT_PROJECT = "P1:Ice Breaker";
 
+export const SPEECH_PROJECT_OPTIONS = [
+  DEFAULT_PROJECT,
+  "P2 to P9",
+  "P10:Inspire Your Audience",
+];
+
 export const DEFAULT_SLOT_COUNTS = {
-  Speaker: 2,
+  Speaker: 3,
   "Table Topic Speaker": 5,
 };
 
 function getProjectVariantIndex(roleProjects, role) {
-  return roleProjects[role] === "P2 and Above" ? 1 : 0;
+  return roleProjects[role] === "P2 to P9" ? 1 : 0;
 }
 
 export function getSlotGroup(role) {
@@ -109,10 +115,23 @@ function parseMeetingFlowLine(line, roleProjects = {}) {
 }
 
 function getSpeechProjectEntry(roleProjects, role, entryType) {
-  if (roleProjects[role] === "P2 and Above") {
+  const project = roleProjects[role] ?? DEFAULT_PROJECT;
+
+  if (project === "P10:Inspire Your Audience") {
     return {
       role,
-      entryType,
+      entryType: project,
+      allocatedSeconds: 600,
+      greenSeconds: 480,
+      yellowSeconds: 540,
+      redSeconds: 600,
+    };
+  }
+
+  if (project === "P2 to P9") {
+    return {
+      role,
+      entryType: project,
       allocatedSeconds: 420,
       greenSeconds: 300,
       yellowSeconds: 360,
@@ -122,7 +141,7 @@ function getSpeechProjectEntry(roleProjects, role, entryType) {
 
   return {
     role,
-    entryType,
+    entryType: project || entryType,
     allocatedSeconds: 360,
     greenSeconds: 240,
     yellowSeconds: 300,
@@ -204,9 +223,7 @@ export function getSignal(entry, elapsedSeconds) {
 }
 
 export function isSpeechRole(entries, role) {
-  return entries.some(
-    (entry) => entry.role === role && entry.entryType.toLowerCase() === "speech",
-  );
+  return entries.some((entry) => entry.role === role && getSlotGroup(entry.role) === "Speaker");
 }
 
 export { EMBEDDED_MEETING_FLOW };
