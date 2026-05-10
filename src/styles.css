@@ -7,6 +7,8 @@
 
 * {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent; /* Remove tap highlight on iOS */
+  -webkit-touch-callout: none; /* Disable callout on iOS */
 }
 
 body {
@@ -15,6 +17,9 @@ body {
   background:
     radial-gradient(circle at top left, rgba(255, 199, 130, 0.55), transparent 28%),
     linear-gradient(160deg, #f9f4ec 0%, #efe7da 55%, #e7dfd2 100%);
+  /* Improve scrolling performance on mobile */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: none;
 }
 
 button,
@@ -194,6 +199,11 @@ select {
   border-radius: 16px;
   padding: 13px 18px;
   transition: transform 120ms ease, opacity 120ms ease, box-shadow 120ms ease;
+  /* Ensure minimum touch target size */
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .primary-button,
@@ -1020,6 +1030,7 @@ select {
 
   .meeting-toolbar .nav-button {
     flex: 1 1 150px;
+    min-height: 44px; /* iOS touch target minimum */
   }
 
   .role-table,
@@ -1040,6 +1051,16 @@ select {
     grid-template-columns: 1fr;
   }
 
+  .timer-control-row button {
+    min-height: 48px; /* Better touch targets */
+    font-size: 1.1rem;
+  }
+
+  .arrow-button {
+    min-width: 48px;
+    min-height: 48px;
+  }
+
   .projector-countdown {
     position: static;
     width: 100%;
@@ -1049,5 +1070,92 @@ select {
   .projector-shell {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  /* Improve touch scrolling */
+  .log-scroll {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Better mobile modal experience */
+  .modal-backdrop {
+    padding: 16px;
+  }
+
+  .modal-shell {
+    max-height: calc(100vh - 32px);
+  }
+}
+
+/* Extra small screens (phones in portrait) */
+@media (max-width: 480px) {
+  .app-shell {
+    padding: 8px;
+  }
+
+  .hero-card {
+    padding: 20px;
+  }
+
+  .hero-card h1 {
+    font-size: 1.8rem;
+  }
+
+  .setup-grid {
+    gap: 16px;
+  }
+
+  .panel {
+    padding: 16px;
+  }
+
+  .meeting-toolbar {
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .meeting-toolbar .nav-button {
+    flex: 1 1 120px;
+    font-size: 0.9rem;
+  }
+
+  .toolbar-total {
+    flex: 1 1 140px;
+    padding: 4px 8px;
+  }
+
+  .toolbar-stepper {
+    flex: 1 1 200px;
+    padding: 4px 8px;
+  }
+
+  .timer-panel-inner {
+    padding: 16px;
+  }
+
+  .role-display {
+    font-size: clamp(1.5rem, 5vw, 2.2rem);
+  }
+
+  .time-display {
+    font-size: clamp(3rem, 15vw, 5rem);
+    margin: 12px 0;
+  }
+
+  .signal-display {
+    font-size: clamp(1.4rem, 4vw, 2.2rem);
+  }
+
+  .timer-controls {
+    margin-top: 20px;
+  }
+
+  .timer-control-row {
+    gap: 8px;
+  }
+
+  .modal-shell {
+    padding: 16px;
+    margin: 8px;
   }
 }
