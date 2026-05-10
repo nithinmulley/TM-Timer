@@ -1,6 +1,3 @@
-# Deployment script for GitHub Pages
-# This script builds the project and deploys to gh-pages branch
-
 Write-Host "Installing dependencies..." -ForegroundColor Green
 npm install
 
@@ -10,6 +7,11 @@ npm run build
 if ($LASTEXITCODE -ne 0) {
     Write-Host "Build failed!" -ForegroundColor Red
     exit 1
+}
+
+Write-Host "Cleaning up build artifacts..." -ForegroundColor Green
+if (Test-Path ".vite") {
+    Remove-Item ".vite" -Recurse -Force
 }
 
 Write-Host "Switching to gh-pages branch..." -ForegroundColor Green
