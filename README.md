@@ -44,4 +44,3 @@ This will:
 4. Commit: `git add .; git commit -m "Deploy"`
 5. Push: `git push origin gh-pages`
 6. Switch back: `git checkout source`
-
